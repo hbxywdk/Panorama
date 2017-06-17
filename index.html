@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>VR</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+        <style>
+            *{
+                margin: 0;
+                padding: 0;
+            }
+            html, body{
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+            }
+            #container{
+                width: 100%;
+                height: 100%;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- 主容器 -->
+        <div id="container"></div>
+        <script src="http://cdn.bootcss.com/three.js/r83/three.min.js"></script>
+        <script>
+            /* 定义全局变量 */
+            var camera, scene, renderer;//相机 场景 渲染器
+
+            var isUserInteracting = false, onMouseDownMouseX = 0, onMouseDownMouseY = 0,
+            lon = 0, onMouseDownLon = 0, lat = 0, onMouseDownLat = 0, phi = 0, theta = 0,
+            container; //主容器和
+
+            // 创建摄像机
+            function createCamera () {
+                camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 1100 );//透视投影照相机
+                camera.target = new THREE.Vector3( 0, 0, 0 );//设置相机所看的位置
+            }
+            // 创建场景
+            function createScene () {
+                scene = new THREE.Scene();//场景
+
+                var geometry = new THREE.SphereGeometry( 500, 60, 40 );//SphereGeometry用来在三维空间内创建一个球体对象.
+                geometry.scale( - 1, 1, 1 );
+
+                var material = new THREE.MeshBasicMaterial( { //使用基本材质（BasicMaterial）的物体，渲染后物体的颜色始终为该材质的颜色，不会由于光照产生明暗、阴影效果
+                    map: new THREE.TextureLoader().load( './timg.jpg' )
+                } );
+
+                var mesh = new THREE.Mesh( geometry, material );//Mesh（图元装配函数）   生成三维物体
+
+                scene.add( mesh );//网格添加到场景中
+            }
+            // 创建渲染器
+            function createRenderer () {
+                renderer = new THREE.WebGLRenderer();//定义渲染器
+                renderer.setPixelRatio( window.devicePixelRatio );
+                renderer.setSize( window.innerWidth, window.innerHeight );//设定尺寸
+                container.appendChild( renderer.domElement );//将场景加入到画面
+            }
+            // 监听事件
+            function eventListen () {
+                document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+                document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+                document.addEventListener( 'mouseup', onDocumentMouseUp, false );
+                document.addEventListener( 'wheel', onDocumentMouseWheel, false );
+                window.addEventListener( 'resize', onWindowResize, false );
+            }
+
+            // window.resize 重置相机 并 重新渲染
+            function onWindowResize() {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize( window.innerWidth, window.innerHeight );
+            }
+            // MouseDown
+            function onDocumentMouseDown( event ) {
+                event.preventDefault();
+                isUserInteracting = true;
+                onPointerDownPointerX = event.clientX;
+                onPointerDownPointerY = event.clientY;
+                onPointerDownLon = lon;
+                onPointerDownLat = lat;
+            }
+            // MouseMove
+            function onDocumentMouseMove( event ) {
+                if ( isUserInteracting === true ) {
+                    lon = ( onPointerDownPointerX - event.clientX ) * 0.1 + onPointerDownLon;
+                    lat = ( event.clientY - onPointerDownPointerY ) * 0.1 + onPointerDownLat;
+                }
+            }
+            // MouseUp
+            function onDocumentMouseUp ( event ) {
+                isUserInteracting = false;
+            }
+            // MouseWheel
+            function onDocumentMouseWheel ( event ) {
+                // 鼠标滚轮事件 event.wheelDelta 向下滑为负 向上滑为正
+                if ( event.wheelDelta < 0 ) { // 向下（缩小）
+                    if ( camera.fov <= 100) {
+                        camera.fov += event.deltaY * 0.05;
+                    }
+                } else if ( event.wheelDelta > 0 ) { // 向上（放大）
+                    if ( camera.fov >= 30 ) {
+                        camera.fov += event.deltaY * 0.05;
+                    }
+                }
+                camera.updateProjectionMatrix();
+            }
+
+            // 动画更新
+            function animate () {
+                if ( isUserInteracting === false ) { // 用户未操作全景图则自动旋转 
+                    lon += 0.05;
+                }
+
+                lat = Math.max( - 85, Math.min( 85, lat ) );
+                phi = THREE.Math.degToRad( 90 - lat ); // THREE.Math.degToRad (Three自带的角度转弧度函数)
+                theta = THREE.Math.degToRad( lon );
+                // 设置相机坐标
+                camera.target.x = 500 * Math.sin( phi ) * Math.cos( theta );
+                camera.target.y = 500 * Math.cos( phi );
+                camera.target.z = 500 * Math.sin( phi ) * Math.sin( theta );
+                camera.lookAt( camera.target );
+
+                renderer.render( scene, camera );
+                requestAnimationFrame( animate );
+            }
+            // 初始化
+            function init () {
+
+                container = document.getElementById( 'container' );
+                // 创建摄像机
+                createCamera();
+                // 创建场景
+                createScene();
+                // 创建渲染器
+                createRenderer();
+                // 监听事件
+                eventListen();
+                // 动画更新
+                animate();
+
+            }
+
+            init();
+            
+        </script>
+    </body>
+</html>
